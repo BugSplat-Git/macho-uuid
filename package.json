@@ -1,6 +1,6 @@
 {
   "name": "macho-uuid",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Library for extracting UUIDs from app and dSYM files without loading the entire file into memory",
   "main": "dist/index.js",
   "bin": {
