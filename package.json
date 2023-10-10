@@ -4,7 +4,7 @@
   "description": "Library for extracting UUIDs from app and dSYM files without loading the entire file into memory",
   "main": "dist/index.js",
   "bin": {
-    "dwarf-guid": "./dist/bin/index.js"
+    "macho-uuid": "./dist/bin/index.js"
   },
   "scripts": {
     "start": "ts-node bin/index.ts ./spec/support/bugsplat.app.dSYM",
