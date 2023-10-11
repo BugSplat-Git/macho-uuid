@@ -1,5 +1,5 @@
-import { OptionDefinition as ArgDefinition } from "command-line-args";
-import { OptionDefinition as UsageDefinition, Section } from "command-line-usage";
+import { OptionDefinition as ArgDefinition } from 'command-line-args';
+import { OptionDefinition as UsageDefinition, Section } from 'command-line-usage';
 
 export type CommandLineDefinition = ArgDefinition & UsageDefinition;
 

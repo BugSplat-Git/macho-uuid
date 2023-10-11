@@ -38,7 +38,8 @@
   "dependencies": {
     "command-line-args": "^5.2.1",
     "command-line-usage": "^7.0.1",
-    "macho": "^1.5.0"
+    "macho": "^1.5.0",
+    "node-filter-async": "^2.0.0"
   },
   "devDependencies": {
     "@types/command-line-args": "^5.2.1",

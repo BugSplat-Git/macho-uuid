@@ -58,10 +58,10 @@ ac15902fba2e31c18b29da51e889b321
 ## API
 
 1. Install this package locally `npm i macho-uuid`.
-2. Create a new instance of `MachoFile` by awaiting a call to the static factory function `MachoFile.createFromFile`. This method accepts files with a `.app`, `.dSYM`, or empty extension.
+2. Create a new instance of `MachoFile` by awaiting a call to the static factory function `MachoFile.createFromPath`. This method accepts files with a `.app`, `.dSYM`, or empty extension.
 
 ```ts
-const machoFile = await MachoFile.createFromFile('./path/to/bugsplat.app');
+const machoFile = await MachoFile.createFromPath('./path/to/bugsplat.app');
 ```
 3. Await a call to `getUUID()` to get the unique identifier for the file.
 

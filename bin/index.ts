@@ -15,8 +15,8 @@ import { argDefinitions, usageDefinitions } from './command-line-definitions';
     }
 
     try {       
-        const file = await MachoFile.createFromFile(path);
-        const uuid = await file.getUUID();
+        const file = await MachoFile.createFromPath(path);
+        const uuid = await file[0].getUUID(); // TODO BG
         console.log(uuid);
     } catch (error) {
         console.log((error as Error).message);
