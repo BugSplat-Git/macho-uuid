@@ -38,7 +38,7 @@ Usage
 
 Example
 
-  macho-uuid path-to-app-dsym-or-macos-binary-file 
+  macho-uuid path-to-macho-bundle-or-fat-file 
 
 Links
 
@@ -49,7 +49,7 @@ Links
   💌 support@bugsplat.com
 ```
 
-3. Run macho-uuid specifying a path to a `.app`, `.dSYM`, or macOS binary file:
+3. Run macho-uuid specifying a path to a `.app`, `.dSYM`, `.bundle`, `.xcarchive`, `.framework`, or macOS binary file:
 
 ```bash
 bobby@BugSplat % ~ % macho-uuid ./path/to/bugsplat-ios.app
