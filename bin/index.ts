@@ -1,7 +1,7 @@
 #! /usr/bin/env node
 import commandLineArgs from 'command-line-args';
 import commandLineUsage from 'command-line-usage';
-import { MachoFile } from '../src/macho';
+import { createMachoFiles } from '../src/factory';
 import { argDefinitions, usageDefinitions } from './command-line-definitions';
 
 (async () => {
@@ -15,9 +15,9 @@ import { argDefinitions, usageDefinitions } from './command-line-definitions';
     }
 
     try {       
-        const file = await MachoFile.createFromPath(path);
-        const uuid = await file[0].getUUID(); // TODO BG
-        console.log(uuid);
+        const files = await createMachoFiles(path);
+        const info = await Promise.all(files.map(async (file) => ({ path: file.path, uuid: await file.getUUID()})));
+        console.log(info);
     } catch (error) {
         console.log((error as Error).message);
         process.exit(1);
