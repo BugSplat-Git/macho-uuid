@@ -7,7 +7,7 @@
     "macho-uuid": "./dist/bin/index.js"
   },
   "scripts": {
-    "start": "ts-node bin/index.ts ./spec/support/bugsplat.app.dSYM",
+    "start": "ts-node bin/index.ts ./spec/support/bugsplat-ios.app/Frameworks/bugsplat.framework/HockeySDKResources.bundle/Contents/MacOS/HockeySDKResources",
     "test": "ts-node node_modules/jasmine/bin/jasmine",
     "help": "ts-node ./bin/index.ts -h",
     "build": "tsc",

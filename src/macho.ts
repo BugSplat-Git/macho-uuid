@@ -4,10 +4,19 @@ import { FileHandle, open } from 'node:fs/promises';
 const maxSizeOfMachoHeader = 32;
 
 export class MachoFile {
+    private cpuType: string | undefined;
     private uuid: string | undefined;
     private header: MachoHeader | undefined;
 
     constructor(public readonly path: string, private headerOffset = 0) { }
+
+    async getCpuType(): Promise<string> {
+        if (!this.cpuType) {
+            this.cpuType = await this.readCpuType();
+        }
+
+        return this.cpuType;
+    }
 
     async getHeader(): Promise<MachoHeader> {
         if (!this.header) {
@@ -23,6 +32,11 @@ export class MachoFile {
         }
 
         return this.uuid;
+    }
+
+    async getUUIDFormatted(): Promise<string> {
+        const uuid = await this.getUUID();
+        return uuid.replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5').toUpperCase();
     }
 
     async isValid(): Promise<boolean> {
@@ -56,6 +70,10 @@ export class MachoFile {
         }
 
         return isMacho;
+    }
+
+    private readCpuType(): Promise<string> {
+        return this.getHeader().then(({ cpu }) => cpu.type || '?');
     }
 
     private async readHeader(): Promise<MachoHeader> {
@@ -132,7 +150,7 @@ type MachoHeader = {
     bits: 32 | 64;
     body: Buffer;
     cmds: Array<unknown>;
-    cpu: unknown;
+    cpu: { type: string; subtype: string; endian: 'le' | 'be' };
     filetype: 'dsym' | unknown;
     flags: Record<string, unknown>;
     hsize: 28 | 32;
