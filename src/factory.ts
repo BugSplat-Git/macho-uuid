@@ -24,22 +24,20 @@ export async function createMachoFiles(path: string): Promise<MachoFile[]> {
         throw new Error(`File does not exist at ${path}`);
     }
 
-    const extension = extname(path).toLowerCase();
-
-    if (!extensions.includes(extension)) {
+    if (!extensions.includes(extname(path).toLowerCase())) {
         throw new Error(`Invalid file extension at ${path}`);
     }
 
-    let symbolFiles = [path];
-    if (lstatSync(path).isDirectory()) {
-        const normalizedPath = path.replaceAll('\\', '/');
-        const files = await glob(`${normalizedPath}/**/*`, { nodir: true });
-        const filteredFiles = await filterAsync(files, isFatOrMacho);
-        symbolFiles = filteredFiles;
-    }
+    const symbolFiles = lstatSync(path).isDirectory() ? await findSymbolFilesRecursively(path) : [path];
+    const machoFiles = await createMachoFilesFromSymbolFiles(symbolFiles);
+    const uniqueMachoFiles = await getUniqueMachoFiles(machoFiles);
 
-    const machoFiles = await Promise.all(
-        symbolFiles.map(
+    return uniqueMachoFiles;
+}
+
+async function createMachoFilesFromSymbolFiles(symbolFilePaths: Array<string>): Promise<Array<MachoFile>> {
+    return Promise.all(
+        symbolFilePaths.map(
             async (file) => {
                 const fat = await FatFile.isFat(file);
 
@@ -51,9 +49,20 @@ export async function createMachoFiles(path: string): Promise<MachoFile[]> {
             }
         )
     ).then((files) => files.flat());
+}
 
+async function findSymbolFilesRecursively(path: string): Promise<Array<string>> {
+    const normalizedPath = path.replaceAll('\\', '/');
+    const files = await glob(`${normalizedPath}/**/*`, { nodir: true });
+    return filterAsync(files, isFatOrMacho);
+}
+
+// Executable binaries and the corresponding symbol files can have the same UUID.
+// We want the file containing the most symbol information, so we'll keep the larger file.
+// TODO BG: I'm not sure this is the correct heuristic, does anyone have a better idea?
+async function getUniqueMachoFiles(machoFiles: Array<MachoFile>): Promise<Array<MachoFile>> {
     const uniqueMachoFiles = new Map<string, MachoFile>();
-
+    
     for (const file of machoFiles) {
         const uuid = await file.getUUID();
         const exists = uniqueMachoFiles.has(uuid);
