@@ -15,6 +15,9 @@ const extensions = [
     ''
 ];
 
+// Many of the accepted extension types specified above are actually directories.
+// Create an array of Mach-O files containing symbol information by recursively reading a given path.
+// When encountering a FAT Universal binary file, read the header and create multiple Mach-O files accordingly.
 export async function createMachoFiles(path: string): Promise<MachoFile[]> {
     if (!path) {
         throw new Error('Missing path to Mach-O file or Universal binary.');
