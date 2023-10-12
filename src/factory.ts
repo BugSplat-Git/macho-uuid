@@ -61,8 +61,8 @@ async function findSymbolFilesRecursively(path: string): Promise<Array<string>> 
 }
 
 // Executable binaries and the corresponding symbol files can have the same UUID.
-// We want the file containing the most symbol information, so we'll keep the larger file.
-// TODO BG: I'm not sure this is the correct heuristic, does anyone have a better idea?
+// We want the file containing the most symbol information, this is likely the dSYM.
+// If for some reason one of the files is not a dSYM, we take whichever is larger.
 async function getUniqueMachoFiles(machoFiles: Array<MachoFile>): Promise<Array<MachoFile>> {
     const uniqueMachoFiles = new Map<string, MachoFile>();
     
@@ -70,15 +70,21 @@ async function getUniqueMachoFiles(machoFiles: Array<MachoFile>): Promise<Array<
         const uuid = await file.getUUID();
         const exists = uniqueMachoFiles.has(uuid);
 
-        if (!exists) {
+        if (!exists || file.path.toLowerCase().includes('.dsym')) {
             uniqueMachoFiles.set(uuid, file);
             continue;
         }
 
         const existing = uniqueMachoFiles.get(uuid)!;
+        
+        if (existing.path.toLowerCase().includes('.dsym')) {
+            continue;
+        }
+
         const existingSize = await stat(existing.path).then(stats => stats.size);
         const currentSize = await stat(file.path).then(stats => stats.size);
         const newValue = existingSize > currentSize ? existing : file;
+        
         uniqueMachoFiles.set(uuid, newValue);
     }
 
