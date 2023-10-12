@@ -67,7 +67,6 @@ describe('createMachoFiles', () => {
         }
     });
 
-    // TODO BG we should probably dive deeper here... perhaps we want to always pick the dSYM regardless of size?
     it('should return MachoFiles for xcarchive filtering out duplicates based on largest size', async () => {
         const expected = new Map([
             ['e7647c7b5fac31cea802ba1d33948697', 'spec/support/bugsplat.xcarchive/dSYMs/bugsplat.app.dSYM/Contents/Resources/DWARF/bugsplat'],
