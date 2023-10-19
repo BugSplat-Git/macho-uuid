@@ -15,7 +15,7 @@
 
 # macho-uuid
 
-A nifty little library for reading unique identifiers from .app, .dSYM, and macOS binary files.
+A nifty little library for reading unique identifiers from .app, .dSYM, .bundle, .xcarchive, .framework, or macOS binary files.
 
 ## Command Line
 
@@ -27,41 +27,46 @@ bobby@BugSplat % ~ % macho-uuid -h
 
 macho-uuid
 
-  A command line utility and library for reading the UUID of a .app, .dSYM, or  
-  macOS binary file.                                                            
+  A command line utility and library for reading the UUID of a .app, .dSYM,     
+  .bundle, .xcarchive, .framework, or macOS binary file.
 
 Usage
 
-  --path string   Path to a .app, .dSYM, or macOS binary file. 
-  -h, --help      Print this usage guide.                      
+  --path string   Path to a .app, .dSYM, .bundle, .xcarchive, .framework, or
+                  macOS binary file.
+  -h, --help      Print this usage guide.
 
 Example
 
-  macho-uuid path-to-app-dsym-or-macos-binary-file 
+  macho-uuid path-to-macho-bundle-or-fat-file 
 
 Links
 
-  🐛 https://bugsplat.com                       
+  🐛 https://bugsplat.com
+ 
+  💻 https://github.com/BugSplat-Git/macho-uuid
                                                 
-  💻 https://github.com/BugSplat-Git/macho-uuid 
-                                                
-  💌 support@bugsplat.com   
+  💌 support@bugsplat.com
 ```
 
-3. Run macho-uuid specifying a path to a `.app`, `.dSYM`, or macOS binary file:
+3. Run macho-uuid specifying a path to a `.app`, `.dSYM`, `.bundle`, `.xcarchive`, `.framework`, or macOS binary file:
 
 ```bash
-bobby@BugSplat % ~ % macho-uuid ./path/to/bugsplat.app
-ac15902fba2e31c18b29da51e889b321
+bobby@BugSplat % ~ % macho-uuid ./path/to/bugsplat-ios.app
+UUID: 59686D50-E0A4-3FB9-AD27-BAADAD47E0BC (arm64) spec/support/bugsplat-ios.app/bugsplat-ios
+UUID: C3E6032C-B73E-39D5-9D87-2ACC2A515240 (arm64) spec/support/bugsplat-ios.app/Frameworks/bugsplat.framework/bugsplat
+UUID: 39D9CB72-DE66-3CA6-B85B-BFA04B60782E (x86_64) spec/support/bugsplat-ios.app/Frameworks/bugsplat.framework/HockeySDKResources.bundle/Contents/MacOS/HockeySDKResources
+UUID: 7F2B35C3-9745-33D1-B991-EC0DA93CC085 (arm64) spec/support/bugsplat-ios.app/Frameworks/bugsplat.framework/HockeySDKResources.bundle/Contents/MacOS/HockeySDKResources
 ```
 
 ## API
 
 1. Install this package locally `npm i macho-uuid`.
-2. Create a new instance of `MachoFile` by awaiting a call to the static factory function `MachoFile.createFromFile`. This method accepts files with a `.app`, `.dSYM`, or empty extension.
+2. Use the `createMachoFiles` factory to recursively create an array of `MachoFile` instances for a given path.
 
 ```ts
-const machoFile = await MachoFile.createFromFile('./path/to/bugsplat.app');
+import { createMachoFiles } from 'macho-uuid';
+const machoFiles = await createMachoFiles('./path/to/bugsplat.app');
 ```
 3. Await a call to `getUUID()` to get the unique identifier for the file.
 

@@ -1,5 +1,5 @@
-import { OptionDefinition as ArgDefinition } from "command-line-args";
-import { OptionDefinition as UsageDefinition, Section } from "command-line-usage";
+import { OptionDefinition as ArgDefinition } from 'command-line-args';
+import { OptionDefinition as UsageDefinition, Section } from 'command-line-usage';
 
 export type CommandLineDefinition = ArgDefinition & UsageDefinition;
 
@@ -9,7 +9,7 @@ export const argDefinitions: Array<CommandLineDefinition> = [
         type: String,
         defaultOption: true,
         typeLabel: '{underline string}',
-        description: 'Path to a .app, .dSYM, or macOS binary file.',
+        description: 'Path to a .app, .dSYM, .bundle, .xcarchive, .framework, or macOS binary file.',
     },
     {
         name: 'help',
@@ -22,7 +22,7 @@ export const argDefinitions: Array<CommandLineDefinition> = [
 export const usageDefinitions: Array<Section> = [
     {
         header: 'macho-uuid',
-        content: 'A command line utility and library for reading the UUID of a .app, .dSYM, or macOS binary file.',
+        content: 'A command line utility and library for reading the UUID of a .app, .dSYM, .bundle, .xcarchive, .framework, or macOS binary file.',
     },
     {
         header: 'Usage',

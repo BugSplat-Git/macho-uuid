@@ -1,21 +1,28 @@
-import { Parser, constants } from "macho";
-import { existsSync } from "node:fs";
-import { FileHandle, open, readdir } from "node:fs/promises";
-import { extname, join } from "node:path";
+import { Parser, constants } from 'macho';
+import { FileHandle, open } from 'node:fs/promises';
 
 const maxSizeOfMachoHeader = 32;
 
 export class MachoFile {
+    private cpuType: string | undefined;
     private uuid: string | undefined;
     private header: MachoHeader | undefined;
-    
-    constructor(private path: string) { }
+
+    constructor(public readonly path: string, private headerOffset = 0) { }
+
+    async getCpuType(): Promise<string> {
+        if (!this.cpuType) {
+            this.cpuType = await this.readCpuType();
+        }
+
+        return this.cpuType;
+    }
 
     async getHeader(): Promise<MachoHeader> {
         if (!this.header) {
             this.header = await this.readHeader();
         }
-        
+
         return this.header;
     }
 
@@ -27,32 +34,46 @@ export class MachoFile {
         return this.uuid;
     }
 
-    static async createFromFile(path: string): Promise<MachoFile> {
-        if (!path) {
-            throw new Error('Missing path to .app, .dSYM, or executable binary file.');
+    async getUUIDFormatted(): Promise<string> {
+        const uuid = await this.getUUID();
+        return uuid.replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5').toUpperCase();
+    }
+
+    async isValid(): Promise<boolean> {
+        let isValid = false;
+        
+        try {
+            isValid = await this.getUUID().then(uuid => !!uuid);
+        } catch {
+            isValid = false;
         }
 
-        if (!existsSync(path)) {
-            throw new Error(`File does not exist at ${path}`);
+        return isValid;
+    }
+
+    static async isMacho(path: string): Promise<boolean> {
+        let isMacho = false;
+        let fileHandle: FileHandle;
+        try {
+            fileHandle = await open(path, 'r');
+
+            const { buffer, bytesRead } = await fileHandle.read(Buffer.alloc(maxSizeOfMachoHeader), 0, maxSizeOfMachoHeader, 0);
+
+            if (bytesRead) {
+                const header = (new Parser() as Parser).parseHead(buffer);
+                isMacho = !!header;
+            }
+        } catch {
+            isMacho = false;
+        } finally {
+            await fileHandle!?.close();
         }
-    
-        const extension = extname(path).toLowerCase();
-            
-        if (extension !== '.app' && extension !== '.dsym' && extension !== '') {
-            throw new Error('File in not a .app, .dSYM, or executable binary: ' + path);
-        }
-    
-        const resources = join(path, 'Contents', 'Resources', 'DWARF');
-        const files = await readdir(resources);
-    
-        if (files.length > 1) {
-            // TODO BG should we throw here?
-            throw new Error(`Multiple resources detected at path ${resources}`);
-        }
-    
-        const symbolFile = join(resources, files[0]);
-    
-        return new MachoFile(symbolFile);
+
+        return isMacho;
+    }
+
+    private readCpuType(): Promise<string> {
+        return this.getHeader().then(({ cpu }) => cpu.type || '?');
     }
 
     private async readHeader(): Promise<MachoHeader> {
@@ -61,7 +82,7 @@ export class MachoFile {
         try {
             fileHandle = await open(this.path, 'r');
 
-            const { buffer, bytesRead } = await fileHandle.read(Buffer.alloc(maxSizeOfMachoHeader), 0, maxSizeOfMachoHeader, 0);
+            const { buffer, bytesRead } = await fileHandle.read(Buffer.alloc(maxSizeOfMachoHeader), 0, maxSizeOfMachoHeader, this.headerOffset);
 
             if (!bytesRead) {
                 throw new Error('Could not read Mach-O header.');
@@ -96,7 +117,7 @@ export class MachoFile {
                 throw new Error('Mach-O header doesn\'t contain command section size.');
             }
 
-            const { buffer, bytesRead } = await fileHandle.read(Buffer.alloc(sizeofcmds), 0, sizeofcmds, hsize);
+            const { buffer, bytesRead } = await fileHandle.read(Buffer.alloc(sizeofcmds), 0, sizeofcmds, this.headerOffset + hsize);
 
             if (!bytesRead) {
                 throw new Error('Could not read Mach-O commands.');
@@ -129,7 +150,7 @@ type MachoHeader = {
     bits: 32 | 64;
     body: Buffer;
     cmds: Array<unknown>;
-    cpu: unknown;
+    cpu: { type: string; subtype: string; endian: 'le' | 'be' };
     filetype: 'dsym' | unknown;
     flags: Record<string, unknown>;
     hsize: 28 | 32;
