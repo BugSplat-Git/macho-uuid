@@ -39,6 +39,7 @@
     "command-line-args": "^5.2.1",
     "command-line-usage": "^7.0.1",
     "macho": "^1.5.0",
+    "glob": "^10.3.10",
     "node-filter-async": "^2.0.0"
   },
   "devDependencies": {
@@ -47,7 +48,6 @@
     "@types/jasmine": "^4.3.6",
     "@types/node": "^20.6.1",
     "dotenv": "^16.3.1",
-    "glob": "^10.3.10",
     "jasmine": "^5.1.0",
     "ts-node": "^10.9.1",
     "typescript": "^5.2.2"
