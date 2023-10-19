@@ -21,7 +21,7 @@ import { argDefinitions, usageDefinitions } from './command-line-definitions';
         const info = infos.join('\n');
         console.log(info);
     } catch (error) {
-        console.log((error as Error).message);
+        console.error(error);
         process.exit(1);
     }
 })();
