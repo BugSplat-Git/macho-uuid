@@ -16,6 +16,20 @@ describe('FatFile', () => {
                 expect(expected.get(uuid)).toEqual(path);
             }
         });
+
+        it('should return MachoFiles for fat dylib', async () => {
+            const expected = new Map([
+                ['6c40dc26058937a89df8060647aa0d35', 'spec/support/libggcurl.dylib'],
+                ['e7e2a3aa880b3b5386c2b618771528ff', 'spec/support/libggcurl.dylib']
+            ]);
+            const files = await createMachoFiles('spec/support/libggcurl.dylib');
+        
+            for (const file of files) {
+                const uuid = await file.getUUID();
+                const path = file.path;
+                expect(expected.get(uuid)).toEqual(path);
+            }
+        });
     });
     
     describe('isFat', () => {
