@@ -15,7 +15,7 @@
 
 # macho-uuid
 
-A nifty little library for reading unique identifiers from .app, .dSYM, .bundle, .xcarchive, .framework, or macOS binary files.
+A nifty little library for reading unique identifiers from .app, .dSYM, .bundle, .xcarchive, .framework, .dylib, or macOS binary files.
 
 ## Command Line
 
@@ -28,11 +28,11 @@ bobby@BugSplat % ~ % macho-uuid -h
 macho-uuid
 
   A command line utility and library for reading the UUID of a .app, .dSYM,     
-  .bundle, .xcarchive, .framework, or macOS binary file.
+  .bundle, .xcarchive, .framework, .dylib, or macOS binary file.
 
 Usage
 
-  --path string   Path to a .app, .dSYM, .bundle, .xcarchive, .framework, or
+  --path string   Path to a .app, .dSYM, .bundle, .xcarchive, .framework, .dylib or
                   macOS binary file.
   -h, --help      Print this usage guide.
 
@@ -49,7 +49,7 @@ Links
   💌 support@bugsplat.com
 ```
 
-3. Run macho-uuid specifying a path to a `.app`, `.dSYM`, `.bundle`, `.xcarchive`, `.framework`, or macOS binary file:
+3. Run macho-uuid specifying a path to a `.app`, `.dSYM`, `.bundle`, `.xcarchive`, `.framework`, `.dylib`, or macOS binary file:
 
 ```bash
 bobby@BugSplat % ~ % macho-uuid ./path/to/bugsplat-ios.app
