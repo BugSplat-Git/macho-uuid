@@ -12,6 +12,7 @@ const extensions = [
     '.bundle',
     '.framework',
     '.xcarchive',
+    '.dylib',
     ''
 ];
 
