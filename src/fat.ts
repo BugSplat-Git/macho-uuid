@@ -70,7 +70,8 @@ export class FatFile {
                 }
 
                 const machoFileOffset = buffer.readUInt32BE(0); 
-                const machoFile = new MachoFile(this.path, machoFileOffset);
+                const machoFileSize = buffer.readUInt32BE(0);
+                const machoFile = new MachoFile(this.path, machoFileOffset, machoFileSize);
                 const valid = await machoFile.isValid();
 
                 if (valid) {
