@@ -49,7 +49,8 @@ async function createMachoFilesFromSymbolFiles(symbolFilePaths: Array<string>): 
                     return new FatFile(file).getMachos();
                 }
 
-                return new MachoFile(file);
+                const { size } = await stat(file);
+                return new MachoFile(file, 0, size);
             }
         )
     ).then((files) => files.flat());

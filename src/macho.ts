@@ -1,5 +1,7 @@
 import { Parser, constants } from 'macho';
+import { createReadStream, createWriteStream } from 'node:fs';
 import { FileHandle, open } from 'node:fs/promises';
+import { pipeline } from 'node:stream/promises';
 
 const maxSizeOfMachoHeader = 32;
 
@@ -8,7 +10,7 @@ export class MachoFile {
     private uuid: string | undefined;
     private header: MachoHeader | undefined;
 
-    constructor(public readonly path: string, private headerOffset = 0) { }
+    constructor(public readonly path: string, private headerOffset: number, private size: number) { }
 
     async getCpuType(): Promise<string> {
         if (!this.cpuType) {
@@ -49,6 +51,16 @@ export class MachoFile {
         }
 
         return isValid;
+    }
+    
+    async writeFile(outputPath: string): Promise<void> {
+      const writeStream = createWriteStream(outputPath);
+      const readStream = createReadStream(this.path, {
+        start: this.headerOffset,
+        end: this.headerOffset + this.size,
+      });
+  
+      await pipeline(readStream, writeStream);
     }
 
     static async isMacho(path: string): Promise<boolean> {
