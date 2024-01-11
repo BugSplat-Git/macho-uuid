@@ -61,16 +61,17 @@ export class FatFile {
             const numberOfMachos = buffer.readUInt32BE(0);
 
             for (let i = 0; i < numberOfMachos; i++) {
+                const numberOfBytesToRead = lengthOfMachoStartOffset + lengthOfMachoSize;
                 const machoStartOffset = sizeOfFatMagic + sizeOfNumberOfMachosSection + (i * lengthOfFatArchSection);
                 const machoFileOffsetOffset = machoStartOffset + lengthOfCpuType + lengthOfCpuSubType;
-                const { buffer, bytesRead } = await fileHandle.read(Buffer.alloc(lengthOfMachoStartOffset), 0, lengthOfMachoStartOffset, machoFileOffsetOffset);
+                const { buffer, bytesRead } = await fileHandle.read(Buffer.alloc(numberOfBytesToRead), 0, numberOfBytesToRead, machoFileOffsetOffset);
 
-                if (bytesRead !== lengthOfMachoStartOffset) {
+                if (bytesRead !== numberOfBytesToRead) {
                     throw new Error('Could not read Fat header.');
                 }
 
-                const machoFileOffset = buffer.readUInt32BE(0); 
-                const machoFileSize = buffer.readUInt32BE(0);
+                const machoFileOffset = buffer.readUInt32BE(0);
+                const machoFileSize = buffer.readUInt32BE(lengthOfMachoStartOffset);
                 const machoFile = new MachoFile(this.path, machoFileOffset, machoFileSize);
                 const valid = await machoFile.isValid();
 
