@@ -93,6 +93,6 @@ async function getUniqueMachoFiles(machoFiles: Array<MachoFile>): Promise<Array<
     return Array.from(uniqueMachoFiles.values());
 }
 
-async function isFatOrMacho(path: string): Promise<boolean> {
-    return !extname(path) && (await MachoFile.isMacho(path) || await FatFile.isFat(path));
+export async function isFatOrMacho(path: string): Promise<boolean> {
+    return (await MachoFile.isMacho(path) || await FatFile.isFat(path));
 }
