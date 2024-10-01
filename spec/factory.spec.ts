@@ -82,4 +82,25 @@ describe('createMachoFiles', () => {
             expect(expected.get(uuid)).toEqual(path);
         }
     });
+
+  describe("isFatOrMacho", () => {
+    it("should return true for fat file", async () =>
+      expectAsync(
+        isFatOrMacho(
+          "spec/support/bugsplat-ios.app/Frameworks/bugsplat.framework/HockeySDKResources.bundle/Contents/MacOS/HockeySDKResources"
+        )
+      ).toBeResolvedTo(true));
+
+    it("should return true for macho file", async () =>
+      expectAsync(
+        isFatOrMacho(
+          "spec/support/bugsplat.app.dSYM/Contents/Resources/DWARF/bugsplat"
+        )
+      ).toBeResolvedTo(true));
+
+    it("should return true for dylib file", async () =>
+      expectAsync(isFatOrMacho("spec/support/libggcurl.dylib")).toBeResolvedTo(
+        true
+      ));
+  });
 });
