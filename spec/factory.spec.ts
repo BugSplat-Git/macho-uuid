@@ -1,4 +1,4 @@
-import { createMachoFiles } from '../src/factory';
+import { createMachoFiles, isFatOrMacho } from '../src/factory';
 
 describe('createMachoFiles', () => {
     it('should throw error if path is missing', async () =>
