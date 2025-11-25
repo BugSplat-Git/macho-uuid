@@ -1,152 +1,165 @@
-import { Parser, constants } from 'macho';
-import { Reader } from './reader';
+import { Parser, constants } from "macho";
+import { Reader } from "./reader";
 
 const maxSizeOfMachoHeader = 32;
 
 export class MachoFile {
-    private cpuType: string | undefined;
-    private uuid: string | undefined;
-    private header: MachoHeader | undefined;
+  private cpuType: string | undefined;
+  private uuid: string | undefined;
+  private header: MachoHeader | undefined;
 
-    constructor(public readonly reader: Reader, private headerOffset: number, private size: number, public readonly path?: string) { }
+  constructor(
+    public readonly reader: Reader,
+    public readonly headerOffset: number,
+    public readonly size: number,
+    public readonly path?: string
+  ) {}
 
-    async getCpuType(): Promise<string> {
-        if (!this.cpuType) {
-            this.cpuType = await this.readCpuType();
-        }
-
-        return this.cpuType;
+  async getCpuType(): Promise<string> {
+    if (!this.cpuType) {
+      this.cpuType = await this.readCpuType();
     }
 
-    async getHeader(): Promise<MachoHeader> {
-        if (!this.header) {
-            this.header = await this.readHeader();
-        }
+    return this.cpuType;
+  }
 
-        return this.header;
+  async getHeader(): Promise<MachoHeader> {
+    if (!this.header) {
+      this.header = await this.readHeader();
     }
 
-    async getUUID(): Promise<string> {
-        if (!this.uuid) {
-            this.uuid = await this.readUUID();
-        }
+    return this.header;
+  }
 
-        return this.uuid;
+  async getUUID(): Promise<string> {
+    if (!this.uuid) {
+      this.uuid = await this.readUUID();
     }
 
-    async getUUIDFormatted(): Promise<string> {
-        const uuid = await this.getUUID();
-        return uuid.replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5').toUpperCase();
+    return this.uuid;
+  }
+
+  async getUUIDFormatted(): Promise<string> {
+    const uuid = await this.getUUID();
+    return uuid
+      .replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, "$1-$2-$3-$4-$5")
+      .toUpperCase();
+  }
+
+  async isValid(): Promise<boolean> {
+    let isValid = false;
+
+    try {
+      isValid = await this.getUUID().then((uuid) => !!uuid);
+    } catch {
+      isValid = false;
     }
 
-    async isValid(): Promise<boolean> {
-        let isValid = false;
-        
+    return isValid;
+  }
+
+  static async isMacho(reader: Reader): Promise<boolean> {
+    let isMacho = false;
+    try {
+      const buffer = await reader.read(0, maxSizeOfMachoHeader);
+
+      if (buffer.length > 0) {
         try {
-            isValid = await this.getUUID().then(uuid => !!uuid);
+          const header = (new Parser() as Parser).parseHead(buffer);
+          isMacho = !!header;
         } catch {
-            isValid = false;
+          // parseHead can throw if buffer is not a valid macho header
+          isMacho = false;
         }
-
-        return isValid;
+      }
+    } catch {
+      isMacho = false;
     }
 
-    static async isMacho(reader: Reader): Promise<boolean> {
-        let isMacho = false;
-        try {
-            const buffer = await reader.read(0, maxSizeOfMachoHeader);
+    return isMacho;
+  }
 
-            if (buffer.length > 0) {
-                try {
-                    const header = (new Parser() as Parser).parseHead(buffer);
-                    isMacho = !!header;
-                } catch {
-                    // parseHead can throw if buffer is not a valid macho header
-                    isMacho = false;
-                }
-            }
-        } catch {
-            isMacho = false;
-        }
+  private readCpuType(): Promise<string> {
+    return this.getHeader().then(({ cpu }) => cpu.type || "?");
+  }
 
-        return isMacho;
+  private async readHeader(): Promise<MachoHeader> {
+    let header: MachoHeader | false;
+
+    const buffer = await this.reader.read(
+      this.headerOffset,
+      maxSizeOfMachoHeader
+    );
+
+    if (buffer.length === 0) {
+      throw new Error("Could not read Mach-O header.");
     }
 
-    private readCpuType(): Promise<string> {
-        return this.getHeader().then(({ cpu }) => cpu.type || '?');
+    try {
+      header = (new Parser() as Parser).parseHead(buffer);
+    } catch (e) {
+      throw new Error("Could not parse Mach-O header.");
     }
 
-    private async readHeader(): Promise<MachoHeader> {
-        let header: MachoHeader | false;
-        
-        const buffer = await this.reader.read(this.headerOffset, maxSizeOfMachoHeader);
-
-        if (buffer.length === 0) {
-            throw new Error('Could not read Mach-O header.');
-        }
-
-        try {
-            header = (new Parser() as Parser).parseHead(buffer);
-        } catch (e) {
-            throw new Error('Could not parse Mach-O header.');
-        }
-
-        if (!header) {
-            throw new Error('Could not parse Mach-O header.');
-        }
-
-        return header;
+    if (!header) {
+      throw new Error("Could not parse Mach-O header.");
     }
 
-    private async readUUID(): Promise<string> {
-        const { ncmds, sizeofcmds, hsize } = await this.getHeader();
+    return header;
+  }
 
-        let uuid = '';
+  private async readUUID(): Promise<string> {
+    const { ncmds, sizeofcmds, hsize } = await this.getHeader();
 
-        if (!ncmds) {
-            throw new Error('Mach-O header doesn\'t contain commands.');
-        }
+    let uuid = "";
 
-        if (!sizeofcmds) {
-            throw new Error('Mach-O header doesn\'t contain command section size.');
-        }
-
-        const buffer = await this.reader.read(this.headerOffset + hsize, sizeofcmds);
-
-        if (buffer.length === 0) {
-            throw new Error('Could not read Mach-O commands.');
-        }
-
-        let offset = 0;
-        while (!uuid) {
-            if (offset + 4 > buffer.length) break;
-            const cmd = buffer.readUInt32LE(offset);
-            const cmdsize = buffer.readUInt32LE(offset + 4);
-
-            if (constants.cmdType[cmd] === 'uuid') {
-                uuid = buffer.subarray(offset + 8, offset + 24).toString('hex');
-            }
-
-            offset += cmdsize;
-        }
-
-        return uuid;
+    if (!ncmds) {
+      throw new Error("Mach-O header doesn't contain commands.");
     }
+
+    if (!sizeofcmds) {
+      throw new Error("Mach-O header doesn't contain command section size.");
+    }
+
+    const buffer = await this.reader.read(
+      this.headerOffset + hsize,
+      sizeofcmds
+    );
+
+    if (buffer.length === 0) {
+      throw new Error("Could not read Mach-O commands.");
+    }
+
+    let offset = 0;
+    while (!uuid) {
+      if (offset + 4 > buffer.length) break;
+      const cmd = buffer.readUInt32LE(offset);
+      const cmdsize = buffer.readUInt32LE(offset + 4);
+
+      if (constants.cmdType[cmd] === "uuid") {
+        uuid = buffer.subarray(offset + 8, offset + 24).toString("hex");
+      }
+
+      offset += cmdsize;
+    }
+
+    return uuid;
+  }
 }
 
 type Parser = {
-    parseHead(buffer: Buffer): MachoHeader | false;
-}
+  parseHead(buffer: Buffer): MachoHeader | false;
+};
 
 type MachoHeader = {
-    bits: 32 | 64;
-    body: Buffer;
-    cmds: Array<unknown>;
-    cpu: { type: string; subtype: string; endian: 'le' | 'be' };
-    filetype: 'dsym' | unknown;
-    flags: Record<string, unknown>;
-    hsize: 28 | 32;
-    magic: 0xfeedface | 0xcefaedfe | 0xfeedfacf | 0xcffaedfe;
-    ncmds: number;
-    sizeofcmds: number;
-}
+  bits: 32 | 64;
+  body: Buffer;
+  cmds: Array<unknown>;
+  cpu: { type: string; subtype: string; endian: "le" | "be" };
+  filetype: "dsym" | unknown;
+  flags: Record<string, unknown>;
+  hsize: 28 | 32;
+  magic: 0xfeedface | 0xcefaedfe | 0xfeedfacf | 0xcffaedfe;
+  ncmds: number;
+  sizeofcmds: number;
+};
