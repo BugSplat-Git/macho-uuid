@@ -16,6 +16,7 @@
   },
   "files": [
     "./index.ts",
+    "./browser.ts",
     "./bin/index.ts"
   ]
 }

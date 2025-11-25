@@ -1,6 +1,4 @@
 import { Parser, constants } from 'macho';
-import { createReadStream, createWriteStream } from 'node:fs';
-import { pipeline } from 'node:stream/promises';
 import { Reader } from './reader';
 
 const maxSizeOfMachoHeader = 32;
@@ -133,20 +131,6 @@ export class MachoFile {
         }
 
         return uuid;
-    }
-    
-    async writeFile(outputPath: string): Promise<void> {
-      if (this.path) {
-        const writeStream = createWriteStream(outputPath);
-        const readStream = createReadStream(this.path, {
-            start: this.headerOffset,
-            end: this.headerOffset + this.size,
-        });
-    
-        await pipeline(readStream, writeStream);
-      } else {
-          throw new Error("Writing file not supported without source path");
-      }
     }
 }
 

@@ -3,6 +3,7 @@
   "version": "1.3.2",
   "description": "Library for extracting UUIDs from app and dSYM files without loading the entire file into memory",
   "main": "dist/index.js",
+  "browser": "dist/browser.js",
   "bin": {
     "macho-uuid": "./dist/bin/index.js"
   },
