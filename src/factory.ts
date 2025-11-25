@@ -5,6 +5,7 @@ import { FatFile } from './fat';
 import { MachoFile } from './macho';
 import filterAsync from 'node-filter-async';
 import {glob} from 'glob';
+import { NodeReader } from './readers/node-reader';
 
 const extensions = [
     '.app',
@@ -43,14 +44,15 @@ async function createMachoFilesFromSymbolFiles(symbolFilePaths: Array<string>): 
     return Promise.all(
         symbolFilePaths.map(
             async (file) => {
-                const fat = await FatFile.isFat(file);
+                const reader = new NodeReader(file);
+                const fat = await FatFile.isFat(reader);
 
                 if (fat) {
-                    return new FatFile(file).getMachos();
+                    return new FatFile(reader, file).getMachos();
                 }
 
                 const { size } = await stat(file);
-                return new MachoFile(file, 0, size);
+                return new MachoFile(reader, 0, size, file);
             }
         )
     ).then((files) => files.flat());
@@ -72,19 +74,22 @@ async function getUniqueMachoFiles(machoFiles: Array<MachoFile>): Promise<Array<
         const uuid = await file.getUUID();
         const exists = uniqueMachoFiles.has(uuid);
 
-        if (!exists || file.path.toLowerCase().includes('.dsym')) {
+        const filePath = file.path || '';
+
+        if (!exists || filePath.toLowerCase().includes('.dsym')) {
             uniqueMachoFiles.set(uuid, file);
             continue;
         }
 
         const existing = uniqueMachoFiles.get(uuid)!;
+        const existingPath = existing.path || '';
         
-        if (existing.path.toLowerCase().includes('.dsym')) {
+        if (existingPath.toLowerCase().includes('.dsym')) {
             continue;
         }
 
-        const existingSize = await stat(existing.path).then(stats => stats.size);
-        const currentSize = await stat(file.path).then(stats => stats.size);
+        const existingSize = existing.reader.size();
+        const currentSize = file.reader.size();
         const newValue = existingSize > currentSize ? existing : file;
         
         uniqueMachoFiles.set(uuid, newValue);
@@ -94,5 +99,6 @@ async function getUniqueMachoFiles(machoFiles: Array<MachoFile>): Promise<Array<
 }
 
 export async function isFatOrMacho(path: string): Promise<boolean> {
-    return (await MachoFile.isMacho(path) || await FatFile.isFat(path));
+    const reader = new NodeReader(path);
+    return (await MachoFile.isMacho(reader) || await FatFile.isFat(reader));
 }

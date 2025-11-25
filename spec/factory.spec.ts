@@ -1,17 +1,19 @@
 import { createMachoFiles, isFatOrMacho } from '../src/factory';
+import { describe, it, expect } from 'vitest';
 
 describe('createMachoFiles', () => {
     it('should throw error if path is missing', async () =>
-        expectAsync(createMachoFiles('')).toBeRejectedWithError(/Missing path/)
+        expect(createMachoFiles('')).rejects.toThrow(/Missing path/)
     );
 
     it('should throw error if file is not a .app, .dSYM, .framework, .bundle, .xcarchive, or executable binary', async () =>
-        expectAsync(createMachoFiles('index.ts')).toBeRejectedWithError(/Invalid file extension/)
+        expect(createMachoFiles('index.ts')).rejects.toThrow(/Invalid file extension/)
     );
 
     it('should throw error if file does not exist', async () =>
-        expectAsync(createMachoFiles('does-not-exist')).toBeRejectedWithError(/File does not exist/)
+        expect(createMachoFiles('does-not-exist')).rejects.toThrow(/File does not exist/)
     );
+
 
     it('should return MachoFiles for an app containing a Universal Binary', async () => {
         const expected = new Map([
@@ -85,21 +87,21 @@ describe('createMachoFiles', () => {
 
   describe("isFatOrMacho", () => {
     it("should return true for fat file", async () =>
-      expectAsync(
+      expect(
         isFatOrMacho(
           "spec/support/bugsplat-ios.app/Frameworks/bugsplat.framework/HockeySDKResources.bundle/Contents/MacOS/HockeySDKResources"
         )
-      ).toBeResolvedTo(true));
+      ).resolves.toBe(true));
 
     it("should return true for macho file", async () =>
-      expectAsync(
+      expect(
         isFatOrMacho(
           "spec/support/bugsplat.app.dSYM/Contents/Resources/DWARF/bugsplat"
         )
-      ).toBeResolvedTo(true));
+      ).resolves.toBe(true));
 
     it("should return true for dylib file", async () =>
-      expectAsync(isFatOrMacho("spec/support/libggcurl.dylib")).toBeResolvedTo(
+      expect(isFatOrMacho("spec/support/libggcurl.dylib")).resolves.toBe(
         true
       ));
   });

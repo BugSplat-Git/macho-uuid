@@ -1,4 +1,4 @@
-import { FileHandle, open } from 'node:fs/promises';
+import { Reader } from './reader';
 import { MachoFile } from './macho';
 
 const fatMagic = [0xca, 0xfe, 0xba, 0xbe];
@@ -21,24 +21,19 @@ export class FatFile {
         return this.machoFiles;
     }
 
-    constructor(public readonly path: string) { }
+    constructor(public readonly reader: Reader, public readonly path?: string) { }
 
-    static async isFat(path: string): Promise<boolean> {
+    static async isFat(reader: Reader): Promise<boolean> {
         let isFat = false;
-        let fileHandle: FileHandle;
         try {
-            fileHandle = await open(path, 'r');
+            const buffer = await reader.read(0, sizeOfFatMagic);
 
-            const { buffer, bytesRead } = await fileHandle.read(Buffer.alloc(sizeOfFatMagic), 0, sizeOfFatMagic, 0);
-
-            if (bytesRead === sizeOfFatMagic) {
+            if (buffer.length === sizeOfFatMagic) {
                 const expected = Buffer.from(fatMagic);
                 isFat = Buffer.compare(buffer, expected) === 0;
             }
         } catch {
             isFat = false;
-        } finally {
-            await fileHandle!?.close();
         }
 
         return isFat;
@@ -46,41 +41,35 @@ export class FatFile {
 
     private async readMachos(): Promise<Array<MachoFile>> {
         let machos: Array<MachoFile> = [];
-        let fileHandle: FileHandle;
-        try {
-            fileHandle = await open(this.path, 'r');
+        
+        const numberOfMachosSectionStartOffset = 4;
+        const sizeOfNumberOfMachosSection = 4;
+        const buffer = await this.reader.read(numberOfMachosSectionStartOffset, sizeOfNumberOfMachosSection);
 
-            const numberOfMachosSectionStartOffset = 4;
-            const sizeOfNumberOfMachosSection = 4;
-            const { buffer, bytesRead } = await fileHandle.read(Buffer.alloc(sizeOfNumberOfMachosSection), 0, sizeOfNumberOfMachosSection, numberOfMachosSectionStartOffset);
+        if (buffer.length !== sizeOfNumberOfMachosSection) {
+            throw new Error('Could not read Fat header.');
+        }
 
-            if (bytesRead !== sizeOfNumberOfMachosSection) {
+        const numberOfMachos = buffer.readUInt32BE(0);
+
+        for (let i = 0; i < numberOfMachos; i++) {
+            const numberOfBytesToRead = lengthOfMachoStartOffset + lengthOfMachoSize;
+            const machoStartOffset = sizeOfFatMagic + sizeOfNumberOfMachosSection + (i * lengthOfFatArchSection);
+            const machoFileOffsetOffset = machoStartOffset + lengthOfCpuType + lengthOfCpuSubType;
+            const buffer = await this.reader.read(machoFileOffsetOffset, numberOfBytesToRead);
+
+            if (buffer.length !== numberOfBytesToRead) {
                 throw new Error('Could not read Fat header.');
             }
 
-            const numberOfMachos = buffer.readUInt32BE(0);
+            const machoFileOffset = buffer.readUInt32BE(0);
+            const machoFileSize = buffer.readUInt32BE(lengthOfMachoStartOffset);
+            const machoFile = new MachoFile(this.reader, machoFileOffset, machoFileSize, this.path);
+            const valid = await machoFile.isValid();
 
-            for (let i = 0; i < numberOfMachos; i++) {
-                const numberOfBytesToRead = lengthOfMachoStartOffset + lengthOfMachoSize;
-                const machoStartOffset = sizeOfFatMagic + sizeOfNumberOfMachosSection + (i * lengthOfFatArchSection);
-                const machoFileOffsetOffset = machoStartOffset + lengthOfCpuType + lengthOfCpuSubType;
-                const { buffer, bytesRead } = await fileHandle.read(Buffer.alloc(numberOfBytesToRead), 0, numberOfBytesToRead, machoFileOffsetOffset);
-
-                if (bytesRead !== numberOfBytesToRead) {
-                    throw new Error('Could not read Fat header.');
-                }
-
-                const machoFileOffset = buffer.readUInt32BE(0);
-                const machoFileSize = buffer.readUInt32BE(lengthOfMachoStartOffset);
-                const machoFile = new MachoFile(this.path, machoFileOffset, machoFileSize);
-                const valid = await machoFile.isValid();
-
-                if (valid) {
-                    machos.push(machoFile);
-                }
+            if (valid) {
+                machos.push(machoFile);
             }
-        } finally {
-            await fileHandle!?.close();
         }
 
         return machos;
