@@ -62,16 +62,44 @@ UUID: 7F2B35C3-9745-33D1-B991-EC0DA93CC085 (arm64) spec/support/bugsplat-ios.app
 ## API
 
 1. Install this package locally `npm i macho-uuid`.
-2. Use the `createMachoFiles` factory to recursively create an array of `MachoFile` instances for a given path.
+
+### Node.js
+
+Use the `createMachoFiles` factory to recursively create an array of `MachoFile` instances for a given path.
 
 ```ts
 import { createMachoFiles } from 'macho-uuid';
+
 const machoFiles = await createMachoFiles('./path/to/bugsplat.app');
+
+for (const file of machoFiles) {
+    const uuid = await file.getUUID();
+    console.log(uuid);
+}
 ```
-3. Await a call to `getUUID()` to get the unique identifier for the file.
+
+### Web
+
+To read Mach-O headers in the browser (e.g., from a `File` object obtained via drag-and-drop), use the `WebReader` with `MachoFile` or `FatFile`.
+
+> **Note**: You'll need a polyfill for `Buffer` in your web environment (e.g., `buffer` package).
 
 ```ts
-const uuid = await machoFile.getUUID();
+import { MachoFile, FatFile, WebReader } from 'macho-uuid';
+
+// Assume 'file' is a File object from an input or drag event
+const reader = new WebReader(file);
+
+if (await FatFile.isFat(reader)) {
+    const fatFile = new FatFile(reader);
+    const machos = await fatFile.getMachos();
+    for (const macho of machos) {
+        console.log(await macho.getUUID());
+    }
+} else if (await MachoFile.isMacho(reader)) {
+    const macho = new MachoFile(reader, 0, file.size);
+    console.log(await macho.getUUID());
+}
 ```
 
 ## 🐛 About

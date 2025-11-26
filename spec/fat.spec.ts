@@ -1,5 +1,7 @@
 import { createMachoFiles } from '../src/factory';
 import { FatFile } from '../src/fat';
+import { NodeReader } from '../src/readers/node-reader';
+import { describe, it, expect } from 'vitest';
 
 describe('FatFile', () => {
     describe('getMachos', () => {
@@ -33,12 +35,14 @@ describe('FatFile', () => {
     });
     
     describe('isFat', () => {
-        it('should return false if file is not a fat binary', async () => 
-            expectAsync(FatFile.isFat('spec/support/bugsplat.app.dSYM')).toBeResolvedTo(false)
-        );
+        it('should return false if file is not a fat binary', async () => {
+            const reader = new NodeReader('spec/support/bugsplat.app.dSYM');
+            await expect(FatFile.isFat(reader)).resolves.toBe(false)
+        });
     
-        it('should return true if file is a fat binary', async () => 
-            expectAsync(FatFile.isFat('spec/support/bugsplat-ios.app/Frameworks/bugsplat.framework/HockeySDKResources.bundle/Contents/MacOS/HockeySDKResources')).toBeResolvedTo(true)
-        );
+        it('should return true if file is a fat binary', async () => {
+            const reader = new NodeReader('spec/support/bugsplat-ios.app/Frameworks/bugsplat.framework/HockeySDKResources.bundle/Contents/MacOS/HockeySDKResources');
+            await expect(FatFile.isFat(reader)).resolves.toBe(true)
+        });
     });
 });
