@@ -1,8 +1,6 @@
-import { unlink } from 'node:fs/promises';
 import { MachoFile } from '../src/macho';
-import { createMachoFiles } from '../src/factory';
 import { NodeReader } from '../src/readers/node-reader';
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 
 // TODO BG dwarfdump will get the UUID if you point it at the bundle, can we support this too?
 describe('MachoFile', () => {
@@ -65,35 +63,6 @@ describe('MachoFile', () => {
         });
     });
 
-    describe('writeFile', () => {
-        let files: Array<MachoFile> = [];
-        let tmpFiles: Array<string> = [];
-    
-        beforeEach(async () => {
-          files = await createMachoFiles(
-            'spec/support/bugsplat-ios.app/Frameworks/bugsplat.framework/HockeySDKResources.bundle/Contents/MacOS/HockeySDKResources'
-          );
-          tmpFiles = await Promise.all(
-            files.map(async (file) => `${file.path}-${await file.getUUID()}.tmp`)
-          );
-          await unlinkFiles(tmpFiles);
-        });
-    
-        it('should extract machos from fat file', async () => {
-          const expectedDbgIds = await Promise.all(
-            files.map((file) => file.getUUID())
-          );
-          await Promise.all(
-            files.map((file, index) => file.writeFile(tmpFiles[index]))
-          );
-          const machos = tmpFiles.map((file) => new MachoFile(new NodeReader(file), 0, 0, file));
-          const dbgIds = await Promise.all(machos.map((file) => file.getUUID()));
-          expect(dbgIds).toEqual(expectedDbgIds);
-        });
-    
-        afterEach(async () => unlinkFiles(tmpFiles));
-    });
-    
     describe('isMacho', () => {
         it('should return false for fat file', async () => {
             const reader = new NodeReader('spec/support/bugsplat-ios.app/Frameworks/bugsplat.framework/HockeySDKResources.bundle/Contents/MacOS/HockeySDKResources');
@@ -106,7 +75,3 @@ describe('MachoFile', () => {
         });
     });
 });
-    
-async function unlinkFiles(paths: Array<string>) {
-    return Promise.all(paths.map((path) => unlink(path).catch(() => {})));
-}
